@@ -65,3 +65,9 @@
 - [ ] Photo uploads for community posts
 - [ ] In-app purchase flow for paid events
 - [ ] Tier multiplier on points (Elite 1.5x, Ultimate 2x)
+
+## Service Booking (HubTiger Integration)
+- [x] Service Booking page with branded intro and service type cards
+- [x] HubTiger iFrame embed with Wheelhouse brand styling
+- [x] Add booking tab/entry point to bottom navigation and Home dashboard
+- [ ] Push to GitHub with new feature

@@ -1,7 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
-import { Bell, ChevronRight, MapPin, Calendar, Star, Users, Zap } from "lucide-react";
+import { Bell, ChevronRight, MapPin, Calendar, Star, Users, Zap, Wrench } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 
 const TIER_CONFIG = {
@@ -109,6 +109,20 @@ export default function Home() {
             <p className="text-xs mt-0.5" style={{ color: '#8a9ab0', fontFamily: 'Oswald, sans-serif' }}>SPENT</p>
           </div>
         </div>
+
+        {/* Service Booking Banner */}
+        <Link href="/service">
+          <div className="rounded-2xl p-4 flex items-center gap-4" style={{ background: 'linear-gradient(135deg, #1a2332 0%, #1e2a3a 100%)', border: '1px solid rgba(241,181,59,0.25)' }}>
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(241,181,59,0.15)' }}>
+              <Wrench size={22} style={{ color: '#f1b53b' }} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-sm" style={{ color: '#ffffff', fontFamily: 'Oswald, sans-serif', letterSpacing: '0.05em' }}>BOOK A SERVICE</p>
+              <p className="text-xs mt-0.5" style={{ color: '#8a9ab0' }}>Priority workshop booking for members</p>
+            </div>
+            <ChevronRight size={18} style={{ color: '#f1b53b' }} />
+          </div>
+        </Link>
 
         {/* Upcoming Events */}
         <div>
