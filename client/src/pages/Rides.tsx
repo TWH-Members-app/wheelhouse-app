@@ -3,11 +3,26 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import {
-  Bike, TrendingUp, Clock, Users, MapPin, ChevronRight,
-  Activity, Mountain, Zap, RefreshCw, ExternalLink
+  Bike, Clock, MapPin, ChevronRight,
+  Activity, Mountain, RefreshCw, ExternalLink, ArrowLeft
 } from "lucide-react";
 
 type Tab = "feed" | "routes";
+
+// Shape returned by trpc.strava.routes
+type RouteItem = {
+  id: number;
+  name: string;
+  description: string;
+  distanceFormatted: string;
+  distanceMetres: number;
+  elevationFormatted: string;
+  elevationMetres: number;
+  estimatedTimeFormatted: string;
+  type: number;
+  polyline: string | null;
+  timestamp: number;
+};
 
 const SPORT_ICONS: Record<string, string> = {
   Ride: "🚴",
@@ -18,42 +33,102 @@ const SPORT_ICONS: Record<string, string> = {
   Walk: "🚶",
 };
 
-function ClimbBadge({ category }: { category: number }) {
-  if (category === 0) return null;
-  const labels = ["", "Cat 4", "Cat 3", "Cat 2", "Cat 1", "HC"];
-  const colors = ["", "bg-green-500", "bg-blue-500", "bg-orange-500", "bg-red-500", "bg-purple-600"];
+function RouteDetail({ route, onBack }: { route: RouteItem; onBack: () => void }) {
   return (
-    <span className={`text-xs font-bold text-white px-1.5 py-0.5 rounded ${colors[category] ?? "bg-gray-500"}`}>
-      {labels[category]}
-    </span>
+    <div className="min-h-screen bg-[#161d26] pb-24">
+      {/* Header */}
+      <div className="bg-[#1e2a38] px-4 pt-12 pb-4">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1 text-[#f1b53b] text-sm mb-3"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Routes
+        </button>
+        <h1
+          className="text-xl font-bold text-white"
+          style={{ fontFamily: "'Oswald', sans-serif" }}
+        >
+          {route.name}
+        </h1>
+        {route.description && (
+          <p className="text-gray-400 text-sm mt-1">{route.description}</p>
+        )}
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-3 px-4 py-4">
+        {[
+          { icon: MapPin, label: "Distance", value: route.distanceFormatted },
+          { icon: Mountain, label: "Elevation", value: route.elevationFormatted },
+          { icon: Clock, label: "Est. Time", value: route.estimatedTimeFormatted },
+        ].map(({ icon: Icon, label, value }) => (
+          <div key={label} className="bg-[#1e2a38] rounded-xl p-3 text-center">
+            <Icon className="w-5 h-5 text-[#f1b53b] mx-auto mb-1" />
+            <p className="text-white font-bold text-base">{value}</p>
+            <p className="text-gray-500 text-xs">{label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Route type badge */}
+      <div className="px-4 mb-4">
+        <span className="bg-[#f1b53b] text-[#161d26] text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
+          {route.type === 1 ? "🚴 Cycling" : "🏃 Running"} Route
+        </span>
+      </div>
+
+      {/* Strava link */}
+      <div className="px-4">
+        <a
+          href={`https://www.strava.com/routes/${route.id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center gap-2 bg-[#FC4C02] text-white font-bold py-3 rounded-xl w-full"
+          style={{ fontFamily: "'Oswald', sans-serif" }}
+        >
+          <ExternalLink className="w-4 h-4" />
+          VIEW FULL ROUTE ON STRAVA
+        </a>
+      </div>
+
+      {/* Polyline map hint */}
+      {route.polyline && (
+        <div className="px-4 mt-4">
+          <div className="bg-[#1e2a38] rounded-xl p-4 text-center">
+            <MapPin className="w-8 h-8 text-[#f1b53b] mx-auto mb-2" />
+            <p className="text-gray-400 text-sm">
+              Full interactive map available on Strava
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
 export default function Rides() {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const [tab, setTab] = useState<Tab>("feed");
-  const [selectedRoute, setSelectedRoute] = useState<number | null>(null);
+  const [selectedRoute, setSelectedRoute] = useState<RouteItem | null>(null);
 
   const { data: clubInfo } = trpc.strava.clubInfo.useQuery(undefined, {
     enabled: isAuthenticated,
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: activities, isLoading: activitiesLoading, refetch: refetchActivities } =
-    trpc.strava.clubActivities.useQuery(
-      { perPage: 20, page: 1 },
-      { enabled: isAuthenticated && tab === "feed", staleTime: 2 * 60 * 1000 }
-    );
+  const {
+    data: activities,
+    isLoading: activitiesLoading,
+    refetch: refetchActivities,
+  } = trpc.strava.clubActivities.useQuery(
+    { perPage: 20, page: 1 },
+    { enabled: isAuthenticated && tab === "feed", staleTime: 2 * 60 * 1000 }
+  );
 
-  const { data: routes, isLoading: routesLoading } =
-    trpc.strava.routes.useQuery(
-      { page: 1 },
-      { enabled: isAuthenticated && tab === "routes", staleTime: 5 * 60 * 1000 }
-    );
-
-  const { data: routeDetail } = trpc.strava.routeDetail.useQuery(
-    { routeId: selectedRoute! },
-    { enabled: !!selectedRoute, staleTime: 10 * 60 * 1000 }
+  const { data: routes, isLoading: routesLoading } = trpc.strava.routes.useQuery(
+    { page: 1 },
+    { enabled: isAuthenticated && tab === "routes", staleTime: 5 * 60 * 1000 }
   );
 
   if (authLoading) {
@@ -68,75 +143,28 @@ export default function Rides() {
     return (
       <div className="min-h-screen bg-[#161d26] flex flex-col items-center justify-center px-6 text-center">
         <Bike className="w-16 h-16 text-[#f1b53b] mb-4" />
-        <h2 className="text-2xl font-bold text-white mb-2" style={{ fontFamily: "'Oswald', sans-serif" }}>
+        <h2
+          className="text-2xl font-bold text-white mb-2"
+          style={{ fontFamily: "'Oswald', sans-serif" }}
+        >
           MEMBER RIDES
         </h2>
-        <p className="text-gray-400 mb-6">Sign in to view the Wheelhouse club ride feed, routes, and segments.</p>
-        <a href={getLoginUrl()} className="bg-[#f1b53b] text-[#161d26] font-bold py-3 px-8 rounded-full">
+        <p className="text-gray-400 mb-6">
+          Sign in to view the Wheelhouse club ride feed, routes, and segments.
+        </p>
+        <a
+          href={getLoginUrl()}
+          className="bg-[#f1b53b] text-[#161d26] font-bold py-3 px-8 rounded-full"
+        >
           SIGN IN
         </a>
       </div>
     );
   }
 
-  // Route detail view
-  if (selectedRoute && routeDetail) {
-    return (
-      <div className="min-h-screen bg-[#161d26] pb-24">
-        {/* Header */}
-        <div className="bg-[#1e2a38] px-4 pt-12 pb-4">
-          <button onClick={() => setSelectedRoute(null)} className="text-[#f1b53b] text-sm mb-3 flex items-center gap-1">
-            ← Back to Routes
-          </button>
-          <h1 className="text-xl font-bold text-white" style={{ fontFamily: "'Oswald', sans-serif" }}>
-            {routeDetail.name}
-          </h1>
-          {routeDetail.description && (
-            <p className="text-gray-400 text-sm mt-1">{routeDetail.description}</p>
-          )}
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-3 px-4 py-4">
-          {[
-            { icon: MapPin, label: "Distance", value: routeDetail.distanceFormatted },
-            { icon: Mountain, label: "Elevation", value: routeDetail.elevationFormatted },
-            { icon: Clock, label: "Est. Time", value: routeDetail.estimatedTimeFormatted },
-          ].map(({ icon: Icon, label, value }) => (
-            <div key={label} className="bg-[#1e2a38] rounded-xl p-3 text-center">
-              <Icon className="w-5 h-5 text-[#f1b53b] mx-auto mb-1" />
-              <p className="text-white font-bold text-base">{value}</p>
-              <p className="text-gray-500 text-xs">{label}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Map */}
-        {routeDetail.polyline && (
-          <div className="mx-4 rounded-xl overflow-hidden bg-[#1e2a38]">
-            <img
-              src={`https://maps.googleapis.com/maps/api/staticmap?size=600x300&path=enc:${encodeURIComponent(routeDetail.polyline)}&path=color:0xf1b53b|weight:4&maptype=roadmap&style=element:geometry|color:0x1e2a38&style=element:labels.text.fill|color:0xf1b53b&key=AIzaSyPlaceholderKey`}
-              alt="Route map"
-              className="w-full h-48 object-cover"
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = "none";
-              }}
-            />
-            <div className="p-4">
-              <a
-                href={`https://www.strava.com/routes/${routeDetail.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 bg-[#FC4C02] text-white font-bold py-3 rounded-xl w-full"
-              >
-                <ExternalLink className="w-4 h-4" />
-                View on Strava
-              </a>
-            </div>
-          </div>
-        )}
-      </div>
-    );
+  // Route detail view — uses data already in memory, no extra API call
+  if (selectedRoute) {
+    return <RouteDetail route={selectedRoute} onBack={() => setSelectedRoute(null)} />;
   }
 
   return (
@@ -145,17 +173,23 @@ export default function Rides() {
       <div className="bg-[#1e2a38] px-4 pt-12 pb-4">
         <div className="flex items-center justify-between mb-1">
           <div>
-            <p className="text-[#f1b53b] text-xs font-bold tracking-widest uppercase">Powered by Strava</p>
-            <h1 className="text-2xl font-bold text-white" style={{ fontFamily: "'Oswald', sans-serif" }}>
+            <p className="text-[#f1b53b] text-xs font-bold tracking-widest uppercase">
+              Powered by Strava
+            </p>
+            <h1
+              className="text-2xl font-bold text-white"
+              style={{ fontFamily: "'Oswald', sans-serif" }}
+            >
               RIDES
             </h1>
           </div>
-          {/* Strava orange logo badge */}
           <div className="flex items-center gap-2">
             {clubInfo && (
               <div className="text-right">
                 <p className="text-white text-sm font-bold">{clubInfo.name}</p>
-                <p className="text-gray-400 text-xs">{clubInfo.member_count?.toLocaleString()} members</p>
+                <p className="text-gray-400 text-xs">
+                  {clubInfo.member_count?.toLocaleString()} members
+                </p>
               </div>
             )}
             <div className="w-10 h-10 rounded-full bg-[#FC4C02] flex items-center justify-center">
@@ -187,11 +221,10 @@ export default function Rides() {
       {tab === "feed" && (
         <div className="px-4 py-4">
           <div className="flex items-center justify-between mb-3">
-            <p className="text-gray-400 text-sm">Recent rides from Wheelhouse members</p>
-            <button
-              onClick={() => refetchActivities()}
-              className="text-[#f1b53b] p-1"
-            >
+            <p className="text-gray-400 text-sm">
+              Recent rides from Wheelhouse members
+            </p>
+            <button onClick={() => refetchActivities()} className="text-[#f1b53b] p-1">
               <RefreshCw className="w-4 h-4" />
             </button>
           </div>
@@ -216,8 +249,12 @@ export default function Rides() {
                         {activity.athleteName.charAt(0)}
                       </div>
                       <div>
-                        <p className="text-white text-sm font-bold">{activity.athleteName}</p>
-                        <p className="text-gray-500 text-xs">{activity.sportTypeLabel}</p>
+                        <p className="text-white text-sm font-bold">
+                          {activity.athleteName}
+                        </p>
+                        <p className="text-gray-500 text-xs">
+                          {activity.sportTypeLabel}
+                        </p>
                       </div>
                     </div>
                     <span className="text-lg">
@@ -231,24 +268,24 @@ export default function Rides() {
                   {/* Stats row */}
                   <div className="grid grid-cols-3 gap-2">
                     <div className="text-center">
-                      <div className="flex items-center justify-center gap-1 text-[#f1b53b] mb-0.5">
-                        <MapPin className="w-3 h-3" />
-                      </div>
-                      <p className="text-white text-sm font-bold">{activity.distanceFormatted}</p>
+                      <MapPin className="w-3 h-3 text-[#f1b53b] mx-auto mb-0.5" />
+                      <p className="text-white text-sm font-bold">
+                        {activity.distanceFormatted}
+                      </p>
                       <p className="text-gray-500 text-xs">Distance</p>
                     </div>
                     <div className="text-center">
-                      <div className="flex items-center justify-center gap-1 text-[#f1b53b] mb-0.5">
-                        <Mountain className="w-3 h-3" />
-                      </div>
-                      <p className="text-white text-sm font-bold">{activity.elevationFormatted}</p>
+                      <Mountain className="w-3 h-3 text-[#f1b53b] mx-auto mb-0.5" />
+                      <p className="text-white text-sm font-bold">
+                        {activity.elevationFormatted}
+                      </p>
                       <p className="text-gray-500 text-xs">Elevation</p>
                     </div>
                     <div className="text-center">
-                      <div className="flex items-center justify-center gap-1 text-[#f1b53b] mb-0.5">
-                        <Clock className="w-3 h-3" />
-                      </div>
-                      <p className="text-white text-sm font-bold">{activity.movingTimeFormatted}</p>
+                      <Clock className="w-3 h-3 text-[#f1b53b] mx-auto mb-0.5" />
+                      <p className="text-white text-sm font-bold">
+                        {activity.movingTimeFormatted}
+                      </p>
                       <p className="text-gray-500 text-xs">Moving Time</p>
                     </div>
                   </div>
@@ -283,14 +320,16 @@ export default function Rides() {
               {routes.map((route) => (
                 <button
                   key={route.id}
-                  onClick={() => setSelectedRoute(route.id)}
+                  onClick={() => setSelectedRoute(route)}
                   className="w-full bg-[#1e2a38] rounded-xl p-4 text-left"
                 >
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex-1 min-w-0 pr-2">
                       <p className="text-white font-bold truncate">{route.name}</p>
                       {route.description && (
-                        <p className="text-gray-400 text-xs mt-0.5 line-clamp-1">{route.description}</p>
+                        <p className="text-gray-400 text-xs mt-0.5 line-clamp-1">
+                          {route.description}
+                        </p>
                       )}
                     </div>
                     <ChevronRight className="w-5 h-5 text-gray-500 flex-shrink-0" />
@@ -298,15 +337,21 @@ export default function Rides() {
 
                   <div className="grid grid-cols-3 gap-2">
                     <div className="bg-[#161d26] rounded-lg p-2 text-center">
-                      <p className="text-[#f1b53b] text-sm font-bold">{route.distanceFormatted}</p>
+                      <p className="text-[#f1b53b] text-sm font-bold">
+                        {route.distanceFormatted}
+                      </p>
                       <p className="text-gray-500 text-xs">Distance</p>
                     </div>
                     <div className="bg-[#161d26] rounded-lg p-2 text-center">
-                      <p className="text-[#f1b53b] text-sm font-bold">{route.elevationFormatted}</p>
+                      <p className="text-[#f1b53b] text-sm font-bold">
+                        {route.elevationFormatted}
+                      </p>
                       <p className="text-gray-500 text-xs">Elevation</p>
                     </div>
                     <div className="bg-[#161d26] rounded-lg p-2 text-center">
-                      <p className="text-[#f1b53b] text-sm font-bold">{route.estimatedTimeFormatted}</p>
+                      <p className="text-[#f1b53b] text-sm font-bold">
+                        {route.estimatedTimeFormatted}
+                      </p>
                       <p className="text-gray-500 text-xs">Est. Time</p>
                     </div>
                   </div>
@@ -317,7 +362,9 @@ export default function Rides() {
             <div className="text-center py-12">
               <MapPin className="w-12 h-12 text-gray-600 mx-auto mb-3" />
               <p className="text-gray-400">No routes available</p>
-              <p className="text-gray-500 text-sm mt-1">Save routes on Strava to see them here</p>
+              <p className="text-gray-500 text-sm mt-1">
+                Save routes on Strava to see them here
+              </p>
             </div>
           )}
 

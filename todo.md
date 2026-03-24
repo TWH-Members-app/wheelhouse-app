@@ -77,4 +77,7 @@
 - [x] Build Strava tRPC router with club activities, routes, and segments endpoints
 - [x] Build Rides screen with live Strava club feed (distance, elevation, map)
 - [x] Add Strava Connect OAuth flow for member accounts (via Rides screen)
-- [ ] Push to GitHub with Strava integration
+- [x] Push to GitHub with Strava integration
+
+## Bug Fixes
+- [x] Fix Strava routes 404 error — route detail view should use cached list data instead of separate API call
