@@ -147,6 +147,22 @@ export async function getSegment(segmentId: number): Promise<StravaSegment> {
   return stravaGet(`/segments/${segmentId}`);
 }
 
+/**
+ * Download a route as a GPX file from Strava.
+ * Returns the raw GPX string (XML) to be served to the client.
+ */
+export async function getRouteGpx(routeId: number): Promise<string> {
+  const token = await getStravaAccessToken();
+  const url = `${STRAVA_API_BASE}/routes/${routeId}/export_gpx`;
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    throw new Error(`Strava GPX export failed: ${res.status} for route ${routeId}`);
+  }
+  return res.text();
+}
+
 // ── Formatting Helpers ────────────────────────────────────────────────────────
 
 export function formatDistance(metres: number): string {

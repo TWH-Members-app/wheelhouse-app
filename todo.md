@@ -81,3 +81,11 @@
 
 ## Bug Fixes
 - [x] Fix Strava routes 404 error — route detail view should use cached list data instead of separate API call
+
+## Send to Device (GPX Export)
+- [ ] Add GPX export tRPC endpoint that proxies Strava route GPX download
+- [ ] Build Send to Device bottom sheet UI with Garmin, Karoo, Wahoo options
+- [ ] Implement Karoo/Wahoo native share sheet with GPX file
+- [ ] Implement Garmin Connect web import deep link
+- [ ] Wire Send to Device button into route detail view
+- [ ] Push to GitHub

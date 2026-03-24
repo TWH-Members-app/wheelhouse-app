@@ -14,7 +14,7 @@ import {
 } from "./db";
 import {
   getClubInfo, getClubActivities, getAthleteRoutes, getRoute,
-  exploreSegments, getSegment,
+  exploreSegments, getSegment, getRouteGpx,
   formatDistance, formatDuration, formatElevation, sportTypeLabel,
 } from "./strava";
 
@@ -264,6 +264,14 @@ export const appRouter = router({
           endLatlng: s.end_latlng,
           points: s.points,
         }));
+      }),
+    exportGpx: protectedProcedure
+      .input(z.object({ routeId: z.number() }))
+      .mutation(async ({ input }) => {
+        const gpxContent = await getRouteGpx(input.routeId);
+        // Return as base64 so it can be safely transmitted via JSON
+        const base64 = Buffer.from(gpxContent, 'utf-8').toString('base64');
+        return { gpxBase64: base64, filename: `wheelhouse-route-${input.routeId}.gpx` };
       }),
   }),
 
