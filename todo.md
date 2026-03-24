@@ -70,4 +70,11 @@
 - [x] Service Booking page with branded intro and service type cards
 - [x] HubTiger iFrame embed with Wheelhouse brand styling
 - [x] Add booking tab/entry point to bottom navigation and Home dashboard
-- [ ] Push to GitHub with new feature
+- [x] Push to GitHub with new feature
+
+## Strava Integration
+- [x] Store Strava credentials as environment secrets
+- [x] Build Strava tRPC router with club activities, routes, and segments endpoints
+- [x] Build Rides screen with live Strava club feed (distance, elevation, map)
+- [x] Add Strava Connect OAuth flow for member accounts (via Rides screen)
+- [ ] Push to GitHub with Strava integration

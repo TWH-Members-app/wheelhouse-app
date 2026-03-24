@@ -12,6 +12,11 @@ import {
   getReferralsByUser, createReferral,
   updateUserProfile, getUserById,
 } from "./db";
+import {
+  getClubInfo, getClubActivities, getAthleteRoutes, getRoute,
+  exploreSegments, getSegment,
+  formatDistance, formatDuration, formatElevation, sportTypeLabel,
+} from "./strava";
 
 export const appRouter = router({
   system: systemRouter,
@@ -179,6 +184,86 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         await addComment(input.postId, ctx.user.id, input.content);
         return { success: true };
+      }),
+  }),
+
+  // ── Strava ───────────────────────────────────────────────────────────────
+  strava: router({
+    clubInfo: protectedProcedure.query(async () => {
+      return getClubInfo();
+    }),
+    clubActivities: protectedProcedure
+      .input(z.object({ page: z.number().optional(), perPage: z.number().optional() }))
+      .query(async ({ input }) => {
+        const activities = await getClubActivities(input.perPage ?? 20, input.page ?? 1);
+        return activities.map(a => ({
+          name: a.name,
+          sportType: a.sport_type,
+          sportTypeLabel: sportTypeLabel(a.sport_type),
+          distanceFormatted: formatDistance(a.distance),
+          distanceMetres: a.distance,
+          movingTimeFormatted: formatDuration(a.moving_time),
+          movingTimeSeconds: a.moving_time,
+          elevationFormatted: formatElevation(a.total_elevation_gain),
+          elevationMetres: a.total_elevation_gain,
+          athleteName: `${a.athlete.firstname} ${a.athlete.lastname}`,
+        }));
+      }),
+    routes: protectedProcedure
+      .input(z.object({ page: z.number().optional() }))
+      .query(async ({ input }) => {
+        const routes = await getAthleteRoutes(10, input.page ?? 1);
+        return routes.map(r => ({
+          id: r.id,
+          name: r.name,
+          description: r.description,
+          distanceFormatted: formatDistance(r.distance),
+          distanceMetres: r.distance,
+          elevationFormatted: formatElevation(r.elevation_gain),
+          elevationMetres: r.elevation_gain,
+          estimatedTimeFormatted: formatDuration(r.estimated_moving_time),
+          type: r.type,
+          polyline: r.map?.summary_polyline ?? null,
+          timestamp: r.timestamp,
+        }));
+      }),
+    routeDetail: protectedProcedure
+      .input(z.object({ routeId: z.number() }))
+      .query(async ({ input }) => {
+        const r = await getRoute(input.routeId);
+        return {
+          id: r.id,
+          name: r.name,
+          description: r.description,
+          distanceFormatted: formatDistance(r.distance),
+          distanceMetres: r.distance,
+          elevationFormatted: formatElevation(r.elevation_gain),
+          elevationMetres: r.elevation_gain,
+          estimatedTimeFormatted: formatDuration(r.estimated_moving_time),
+          polyline: r.map?.summary_polyline ?? null,
+        };
+      }),
+    exploreSegments: protectedProcedure
+      .input(z.object({
+        swLat: z.number(), swLng: z.number(),
+        neLat: z.number(), neLng: z.number(),
+      }))
+      .query(async ({ input }) => {
+        const result = await exploreSegments(
+          [input.swLat, input.swLng, input.neLat, input.neLng]
+        );
+        return (result.segments ?? []).map((s: any) => ({
+          id: s.id,
+          name: s.name,
+          distanceFormatted: formatDistance(s.distance),
+          distanceMetres: s.distance,
+          avgGrade: s.avg_grade,
+          elevDifference: s.elev_difference,
+          climbCategory: s.climb_category,
+          startLatlng: s.start_latlng,
+          endLatlng: s.end_latlng,
+          points: s.points,
+        }));
       }),
   }),
 

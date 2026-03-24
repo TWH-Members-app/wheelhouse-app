@@ -1,10 +1,10 @@
 import { useLocation, Link } from "wouter";
-import { Home, Calendar, MessageCircle, Star, User, Wrench } from "lucide-react";
+import { Home, Calendar, MessageCircle, Star, User, Wrench, Bike } from "lucide-react";
 
 const navItems = [
   { path: "/", icon: Home, label: "Home" },
   { path: "/events", icon: Calendar, label: "Events" },
-  { path: "/service", icon: Wrench, label: "Service" },
+  { path: "/rides", icon: Bike, label: "Rides" },
   { path: "/community", icon: MessageCircle, label: "Community" },
   { path: "/rewards", icon: Star, label: "Rewards" },
   { path: "/profile", icon: User, label: "Profile" },

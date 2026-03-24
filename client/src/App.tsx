@@ -12,6 +12,7 @@ import Rewards from "./pages/Rewards";
 import Profile from "./pages/Profile";
 import MemberCard from "./pages/MemberCard";
 import ServiceBooking from "./pages/ServiceBooking";
+import Rides from "./pages/Rides";
 import BottomNav from "./components/BottomNav";
 import { useAuth } from "./_core/hooks/useAuth";
 import { getLoginUrl } from "./const";
@@ -57,6 +58,7 @@ function AppLayout() {
             <Route path="/profile" component={Profile} />
             <Route path="/card" component={MemberCard} />
             <Route path="/service" component={ServiceBooking} />
+            <Route path="/rides" component={Rides} />
             <Route path="/404" component={NotFound} />
             <Route component={NotFound} />
           </Switch>
